@@ -1,31 +1,50 @@
+
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"io"
 	"net"
+	"os"
+	"strings"
 	"time"
 )
 
 func main() {
-	ln, err := net.Listen("tcp", ":9000")
-	if err != nil {
-		panic(err)
+	arguments := os.Args
+	if len(arguments) == 1 {
+		fmt.Println("Please provide port number")
+		return
 	}
-	fmt.Println("server running on port", ln.Addr())
-	defer ln.Close()
+
+	PORT := ":" + arguments[1]
+	l, err := net.Listen("tcp", PORT)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer l.Close()
+
+	c, err := l.Accept()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	for {
-		conn, err := ln.Accept()
+		netData, err := bufio.NewReader(c).ReadString('\n')
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
+			return
 		}
-		if conn != nil {
-			fmt.Println("New Client Connected :", conn.LocalAddr())
+		if strings.TrimSpace(string(netData)) == "STOP" {
+			fmt.Println("Exiting TCP server!")
+			return
 		}
 
-		io.WriteString(conn, fmt.Sprint("Welcome to kloudOne ..", "\n", "You are Connected to Server \n", time.Now()))
-
-		conn.Close()
+		fmt.Print("-> ", string(netData))
+		t := time.Now()
+		myTime := t.Format(time.RFC3339) + "\n"
+		c.Write([]byte(myTime))
 	}
 }
