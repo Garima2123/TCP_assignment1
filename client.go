@@ -1,20 +1,39 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
+	"strings"
 )
 
 func main() {
-	conn, err := net.Dial("tcp", "localhost:9000")
-	if err != nil {
-		panic(err)
+	arguments := os.Args
+	if len(arguments) == 1 {
+		fmt.Println("Please provide host:port.")
+		return
 	}
-	defer conn.Close()
 
-	bs, _ := ioutil.ReadAll(conn)
+	CONNECT := arguments[1]
+	c, err := net.Dial("tcp", CONNECT)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	fmt.Println(string(bs))
+	for {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print(">> ")
+		text, _ := reader.ReadString('\n')
+		fmt.Fprintf(c, text+"\n")
 
+		message, _ := bufio.NewReader(c).ReadString('\n')
+		fmt.Print("->: " + message)
+		if strings.TrimSpace(string(text)) == "STOP" {
+			fmt.Println("TCP client exiting...")
+			return
+		}
+	}
 }
+
